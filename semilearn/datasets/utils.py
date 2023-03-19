@@ -8,7 +8,7 @@ import torch
 from torch.utils.data import sampler, DataLoader
 import torch.distributed as dist
 from io import BytesIO
-
+import wandb
 # TODO: better way
 base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
@@ -78,7 +78,8 @@ def sample_labeled_unlabeled_data(args, data, target, num_classes,
     # get samples per class
     if lb_imbalance_ratio == 1.0:
         # balanced setting, lb_num_labels is total number of labels for labeled data
-        assert lb_num_labels % num_classes == 0, "lb_num_labels must be dividable by num_classes in balanced setting"
+        assert lb_num_labels % num_classes == 0, "lb_num_labels must be dividable by num_classes in balanced setting lb_num_labels" + str(
+            lb_num_labels) + " num_classes" + str(num_classes)
         lb_samples_per_class = [int(lb_num_labels / num_classes)] * num_classes
     else:
         # imbalanced setting, lb_num_labels is the maximum number of labels for class 1
@@ -116,7 +117,9 @@ def sample_labeled_unlabeled_data(args, data, target, num_classes,
 
     np.save(lb_dump_path, lb_idx)
     np.save(ulb_dump_path, ulb_idx)
-    
+    print("len lb_idx", len(lb_idx))
+    print("len lb_idx", len(ulb_idx))
+
     return lb_idx, ulb_idx
 
 

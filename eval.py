@@ -10,6 +10,7 @@ from semilearn.core.utils import get_net_builder, get_dataset
 
 
 if __name__ == "__main__":
+    print("start")
     import argparse
     parser = argparse.ArgumentParser()
 
@@ -35,7 +36,7 @@ if __name__ == "__main__":
     parser.add_argument('--sample_rate', type=int, default=16000)
 
     args = parser.parse_args()
-    
+    print("args.load_path", args.load_path)
     checkpoint_path = os.path.join(args.load_path)
     checkpoint = torch.load(checkpoint_path)
     load_model = checkpoint['ema_model']
@@ -51,7 +52,7 @@ if __name__ == "__main__":
     args.save_name = ''
     
     net = get_net_builder(args.net, args.net_from_name)(num_classes=args.num_classes)
-    keys = net.load_state_dict(load_state_dict)
+    keys = net.load_state_dict(load_state_dict, strict=False)
     if torch.cuda.is_available():
         net.cuda()
     net.eval()
@@ -64,6 +65,7 @@ if __name__ == "__main__":
     args.seed = 0
     args.epoch = 1
     args.num_train_iter = 1024
+    print("args.dataset", args.dataset)
     dataset_dict = get_dataset(args, 'fixmatch', args.dataset, args.num_labels, args.num_classes, args.data_dir, False)
     eval_dset = dataset_dict['eval']
     eval_loader = DataLoader(eval_dset, batch_size=args.batch_size, drop_last=False, shuffle=False, num_workers=4)

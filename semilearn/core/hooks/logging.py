@@ -29,11 +29,12 @@ class LoggingHook(Hook):
         
         elif self.every_n_iters(algorithm, algorithm.num_log_iter):
             if not algorithm.distributed or (algorithm.distributed and algorithm.rank % algorithm.ngpus_per_node == 0):
-                print_text = f"{algorithm.it + 1} iteration USE_EMA: {algorithm.ema_m != 0}, "
-                for i, (key, item) in enumerate(algorithm.log_dict.items()):
-                    print_text += "{:s}: {:.4f}".format(key, item)
-                    if i != len(algorithm.log_dict) - 1:
-                        print_text += ", "
-                    else:
-                        print_text += " "
-                algorithm.print_fn(print_text)
+                if algorithm.log_info == 1:
+                    print_text = f"{algorithm.it + 1} iteration USE_EMA: {algorithm.ema_m != 0}, "
+                    for i, (key, item) in enumerate(algorithm.log_dict.items()):
+                        print_text += "{:s}: {:.4f}".format(key, item)
+                        if i != len(algorithm.log_dict) - 1:
+                            print_text += ", "
+                        else:
+                            print_text += " "
+                    algorithm.print_fn(print_text)

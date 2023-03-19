@@ -203,7 +203,8 @@ class SimMatch(AlgorithmBase):
                                                mask=mask)
 
             total_loss = sup_loss + self.lambda_u * unsup_loss + self.lambda_in * in_loss
-
+            super().update_loss_train_epoch(total_loss, sup_loss, unsup_loss, entropy_loss=0,
+                                            datapoint_entropy_loss=0)
             self.update_bank(ema_feats_x_lb, y_lb, idx_lb)
 
         out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)

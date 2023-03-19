@@ -120,6 +120,8 @@ class MixMatch(AlgorithmBase):
             lambda_u = self.lambda_u * unsup_warmup
 
             total_loss = sup_loss + lambda_u * unsup_loss
+            super().update_loss_train_epoch(total_loss, sup_loss, unsup_loss, entropy_loss=0,
+                                            datapoint_entropy_loss=0)
 
         out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
         log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 

@@ -10,7 +10,10 @@ from semilearn.core import AlgorithmBase
 from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import PseudoLabelingHook
 from semilearn.algorithms.utils import SSL_Argument, str2bool
+import sys
 
+sys.path.append("....")
+from my_loss import main_get_extra_loss, log_loss
 
 @ALGORITHMS.register('flexmatch')
 class FlexMatch(AlgorithmBase):
@@ -54,11 +57,12 @@ class FlexMatch(AlgorithmBase):
     def set_hooks(self):
         self.register_hook(PseudoLabelingHook(), "PseudoLabelingHook")
         self.register_hook(FlexMatchThresholdingHook(ulb_dest_len=self.args.ulb_dest_len, num_classes=self.num_classes, thresh_warmup=self.args.thresh_warmup), "MaskingHook")
+
         super().set_hooks()
 
     def train_step(self, x_lb, y_lb, idx_ulb, x_ulb_w, x_ulb_s):
         num_lb = y_lb.shape[0]
-
+        super().set_p_cutoff(self.p_cutoff)
         # inference and calculate sup/unsup losses
         with self.amp_cm():
             if self.use_cat:
@@ -101,12 +105,20 @@ class FlexMatch(AlgorithmBase):
                                           T=self.T,
                                           softmax=False)
 
+            self.update_pseudo_label_flexmatch(pseudo_label, mask)
+
             unsup_loss = self.consistency_loss(logits_x_ulb_s,
                                                pseudo_label,
                                                'ce',
                                                mask=mask)
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
+
+            entropy_loss, datapoint_entropy_loss = main_get_extra_loss(self.args, logits_x_ulb_w)
+            total_loss += self.args.lambda_entropy * entropy_loss + self.args.lambda_datapoint_entropy * datapoint_entropy_loss
+
+            super().update_loss_train_epoch(total_loss, sup_loss, unsup_loss, entropy_loss,
+                                            datapoint_entropy_loss)
 
         out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
         log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
@@ -138,3 +150,10 @@ class FlexMatch(AlgorithmBase):
             SSL_Argument('--p_cutoff', float, 0.95),
             SSL_Argument('--thresh_warmup', str2bool, True),
         ]
+
+    def update_confidence_flexmatch(self, current_pass_mask, current_max_prob_values, current_classwise_acc):
+        super().update_confidence_flexmatch(current_pass_mask=current_pass_mask, current_max_prob_values=current_max_prob_values,
+                                            current_classwise_acc=current_classwise_acc)
+
+    def update_pseudo_label_flexmatch(self, current_pseudo_label, mask):
+        super().update_pseudo_label_flexmatch(current_pseudo_label=current_pseudo_label, current_mask=mask)

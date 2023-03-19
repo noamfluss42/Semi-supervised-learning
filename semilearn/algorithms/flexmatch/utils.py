@@ -6,6 +6,7 @@ from copy import deepcopy
 from collections import Counter
 
 from semilearn.algorithms.hooks import MaskingHook
+from semilearn.core import AlgorithmBase
 
 
 class FlexMatchThresholdingHook(MaskingHook):
@@ -51,6 +52,7 @@ class FlexMatchThresholdingHook(MaskingHook):
         # mask = max_probs.ge(p_cutoff * (class_acc[max_idx] + 1.) / 2).float()  # linear
         # mask = max_probs.ge(p_cutoff * (1 / (2. - class_acc[max_idx]))).float()  # low_limit
         mask = max_probs.ge(algorithm.p_cutoff * (self.classwise_acc[max_idx] / (2. - self.classwise_acc[max_idx])))  # convex
+
         # mask = max_probs.ge(p_cutoff * (torch.log(class_acc[max_idx] + 1.) + 0.5)/(math.log(2) + 0.5)).float()  # concave
         select = max_probs.ge(algorithm.p_cutoff)
         mask = mask.to(max_probs.dtype)
@@ -59,7 +61,8 @@ class FlexMatchThresholdingHook(MaskingHook):
         if idx_ulb[select == 1].nelement() != 0:
             self.selected_label[idx_ulb[select == 1]] = max_idx[select == 1]
         self.update()
-
+        algorithm.update_confidence_flexmatch(current_pass_mask=mask, current_max_prob_values=max_probs,
+                                              current_classwise_acc=self.classwise_acc)
         return mask
         
         

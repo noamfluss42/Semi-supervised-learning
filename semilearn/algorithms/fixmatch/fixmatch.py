@@ -6,6 +6,10 @@ from semilearn.core.algorithmbase import AlgorithmBase
 from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import PseudoLabelingHook, FixedThresholdingHook
 from semilearn.algorithms.utils import SSL_Argument, str2bool
+import sys
+
+sys.path.append("....")
+from my_loss import main_get_extra_loss, log_loss
 
 
 @ALGORITHMS.register('fixmatch')
@@ -96,6 +100,12 @@ class FixMatch(AlgorithmBase):
                                                mask=mask)
 
             total_loss = sup_loss + self.lambda_u * unsup_loss
+
+            entropy_loss, datapoint_entropy_loss = main_get_extra_loss(self.args, logits_x_ulb_w)
+
+            total_loss += self.args.lambda_entropy * entropy_loss + self.args.lambda_datapoint_entropy * datapoint_entropy_loss
+            super().update_loss_train_epoch(total_loss, sup_loss, unsup_loss, entropy_loss,
+                                            datapoint_entropy_loss)
 
         out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
         log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
