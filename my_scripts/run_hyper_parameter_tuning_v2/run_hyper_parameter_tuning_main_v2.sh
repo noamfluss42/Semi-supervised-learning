@@ -19,10 +19,10 @@ dir=/cs/labs/daphna/noam.fluss/project/SSL_Benchmark/new_forked_semi_supervised_
 
 cd $dir
 
-source /cs/labs/daphna/noam.fluss/usb_venv/bin/activate
+source /cs/labs/daphna/noam.fluss/usb_new_venv/bin/activate
 
 echo "Script Name: $0"
 echo "try v2"
-python3.7 hyper_parameter_tuning_v2.py
+python hyper_parameter_tuning_v2.py
 
 

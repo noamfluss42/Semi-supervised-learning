@@ -14,7 +14,7 @@ dir=/cs/labs/daphna/noam.fluss/project/SSL_Benchmark/new_forked_semi_supervised_
 
 cd $dir
 
-source /cs/labs/daphna/noam.fluss/usb_venv/bin/activate
+source /cs/labs/daphna/noam.fluss/usb_new_venv/bin/activate
 while [ $# -gt 0 ]; do
 
    if [[ $1 == *"--"* ]]; then
@@ -45,7 +45,7 @@ echo "dataset: $dataset?"
 
 ##echo "missing_labels: $missing_labels?"
 echo "slurm_job_id: ${SLURM_JOB_ID}?"
-python3.7 train_v2.py --c config/classic_cv/comatch/my_scripts/comatch_cifar10_40_0_hyperparameter_tuning.yaml\
+python train_v2.py --c config/classic_cv/comatch/my_scripts/comatch_cifar10_40_0_hyperparameter_tuning.yaml\
                         --load_path $load_path --seed $seed --save_name $save_name\
                         --epoch $epoch --num_train_iter $num_train_iter --num_eval_iter $num_eval_iter\
                         --num_classes $num_classes --algorithm $algorithm --save_dir $save_dir\
