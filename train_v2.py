@@ -319,7 +319,7 @@ def main_worker(gpu, ngpus_per_node, args):
     # random seed has to be set for the syncronization of labeled data sampling in each process.
     assert args.seed is not None
     set_random(args)
-
+    print('os.environ["WANDB_CACHE_DIR"]',os.environ["WANDB_CACHE_DIR"])
     if args.random_missing_labels_num != -1:
         args.missing_labels = random.sample(range(args.num_classes), k=args.random_missing_labels_num)
         args.missing_labels.sort()

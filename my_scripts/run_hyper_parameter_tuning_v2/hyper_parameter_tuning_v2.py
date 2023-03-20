@@ -114,8 +114,8 @@ def call_flexmatch_missing_labels_test(version):
         "load_path": "",
         "seed": "",
         "save_name": "",
-        "epoch": 1024,  # 500,
-        "num_train_iter": 614400,  # 512000,
+        "epoch": 30,  # 500,
+        "num_train_iter": 30720,  # 512000,
         "num_eval_iter": 1024,
         "num_classes": 10,
         "num_labels": 40,
@@ -125,9 +125,72 @@ def call_flexmatch_missing_labels_test(version):
         "slurm_job_id": None,
 
         "missing_labels": None,
-        "random_missing_labels_num": [4],
+        "random_missing_labels_num": [0,2,5],
         "choose_random_labeled_training_set": -1,
-        "lambda_entropy": [2],  # [0, 0.1, 1, 3, 5],
+        "lambda_entropy": [0,2],  # [0, 0.1, 1, 3, 5],
+        "lb_imb_ratio": 1,
+        "MNAR_round_type": "ceil",
+        "threshold": 0.95,
+        "lambda_datapoint_entropy": 0,
+        "project_wandb": "test",
+        "python_code_version": 2,
+
+        "ulb_loss_ratio": 1.0,
+        "delete": 0,
+    }
+    main(parameters_dict_missing_labels,killable=False)
+
+def call_free_missing_labels_test(version):
+    parameters_dict_missing_labels = {
+        "load_path": "",
+        "seed": "",
+        "save_name": "",
+        "epoch": 30,  # 500,
+        "num_train_iter": 30720,  # 512000,
+        "num_eval_iter": 1024,
+        "num_classes": 10,
+        "num_labels": 40,
+        "algorithm": "freematch",
+        "save_dir": "./saved_models/classic_cv/tuning",
+        "dataset": "cifar10",
+        "slurm_job_id": None,
+
+        "missing_labels": None,
+        "random_missing_labels_num": [0,2,4],
+        "choose_random_labeled_training_set": -1,
+        "lambda_entropy": 0,  # [0, 0.1, 1, 3, 5],
+        "lb_imb_ratio": 1,
+        "MNAR_round_type": "ceil",
+        "threshold": 0.95,
+        "lambda_datapoint_entropy": 0,
+        "project_wandb": "test",
+        "python_code_version": 2,
+
+        "ulb_loss_ratio": 1.0,
+        "delete": 0,
+    }
+    main(parameters_dict_missing_labels,killable=False)
+
+
+def call_softmatch_missing_labels_test(version):
+    parameters_dict_missing_labels = {
+        "load_path": "",
+        "seed": "",
+        "save_name": "",
+        "epoch": 30,  # 500,
+        "num_train_iter": 30720,  # 512000,
+        "num_eval_iter": 1024,
+        "num_classes": 10,
+        "num_labels": 40,
+        "algorithm": "softmatch",
+        "save_dir": "./saved_models/classic_cv/tuning",
+        "dataset": "cifar10",
+        "slurm_job_id": None,
+
+        "missing_labels": None,
+        "random_missing_labels_num": [0,2,4],
+        "choose_random_labeled_training_set": -1,
+        "lambda_entropy": 0,  # [0, 0.1, 1, 3, 5],
         "lb_imb_ratio": 1,
         "MNAR_round_type": "ceil",
         "threshold": 0.95,
@@ -395,5 +458,5 @@ if __name__ == "__main__":
     # call_adamatch_missing_labels(version)
     version = "debug"
     print("version - ",version)
-    call_flexmatch_missing_labels_test(version)
+    call_softmatch_missing_labels_test(version)
     #call_flexmatch_few_labels(version)
