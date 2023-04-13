@@ -321,21 +321,13 @@ class AlgorithmBase:
         print("random.random()",random.random())
         wandb.log({"random_check/random.random()":random.random()}, step=epoch)
 
-        print("torch.get_rng_state()",torch.get_rng_state())
-        print("torch.get_rng_state().unique(return_counts=True)",torch.get_rng_state().unique(return_counts=True))
-        print("np.random.get_state()[1][0]",np.random.get_state()[1][0])
         wandb.log({"random_check/np.random.get_state()[1][0]": np.random.get_state()[1][0]}, step=epoch)
 
         wandb.log({"random_check/os.environ['PYTHONHASHSEED']": int(os.environ['PYTHONHASHSEED'])}, step=epoch)
-        print("os.environ['PYTHONHASHSEED']",os.environ['PYTHONHASHSEED'])
         wandb.log({"random_check/torch.initial_seed()": torch.initial_seed()}, step=epoch)
-        print("torch.initial_seed()",torch.initial_seed())
-        print("torch.cuda.initial_seed()",torch.cuda.initial_seed())
         wandb.log({"random_check/torch.cuda.initial_seed()": torch.cuda.initial_seed()}, step=epoch)
         wandb.log({"random_check/torch.backends.cudnn.benchmark": int(torch.backends.cudnn.benchmark)}, step=epoch)
         wandb.log({"random_check/torch.backends.cudnn.deterministic": int(torch.backends.cudnn.deterministic)}, step=epoch)
-        print("torch.backends.cudnn.deterministic",torch.backends.cudnn.deterministic)
-        print("torch.backends.cudnn.benchmark", torch.backends.cudnn.benchmark)
         wandb.log({"random_check/float(torch.rand(1)[0].item())": float(torch.rand(1)[0].item())}, step=epoch)
 
 

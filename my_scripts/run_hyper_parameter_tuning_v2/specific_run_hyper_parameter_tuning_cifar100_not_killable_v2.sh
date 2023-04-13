@@ -42,7 +42,7 @@ echo "save_dir: $save_dir?"
 echo "dataset: $dataset?"
 ##echo "missing_labels: $missing_labels?"
 echo "slurm_job_id: ${SLURM_JOB_ID}?"
-
+echo "run specific_run_hyper_parameter_tuning_cifar100_not_killable_v2.sh"
 python train_v2.py --c config/classic_cv/flexmatch/my_flexmatch/debug_hyper_parameter_tuning/run_hyper_parameter_tuning/flexmatch_cifar100_40_0_hyperparameter_tuning.yaml\
                         --load_path $load_path --seed $seed --save_name $save_name\
                         --epoch $epoch --num_train_iter $num_train_iter --num_eval_iter $num_eval_iter\

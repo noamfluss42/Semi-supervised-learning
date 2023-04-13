@@ -437,6 +437,7 @@ def print_important_args(args):
 
 
 if __name__ == "__main__":
+    print("check")
     start_time = time.time()
     args = get_config()
     print_important_args(args)
