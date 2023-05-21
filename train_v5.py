@@ -195,8 +195,18 @@ def get_config():
                         help='the datapoint entropy loss coefficient')
     parser.add_argument('--shell_code_version', type=float, default=0,
                         help='version')
-    parser.add_argument('--python_code_version', type=float, default=2,
+    parser.add_argument('--python_code_version', type=float, default=4,
                         help='version')
+
+    parser.add_argument('--lambda_entropy_with_labeled_data', type=float, default=0,
+                        help='Robust Semi-Supervised Learning when Not All Classes have Labels')
+    parser.add_argument('--lambda_entropy_with_labeled_data_v2', type=float, default=0,
+                        help='Robust Semi-Supervised Learning when Not All Classes have Labels - by code')
+
+    parser.add_argument('--split_to_superclasses', type=float, default=0,
+                        help='Robust Semi-Supervised Learning when Not All Classes have Labels - by code')
+    parser.add_argument('--new_ent_loss_ratio', type=float, default=-1,
+                        help='Robust Semi-Supervised Learning when Not All Classes have Labels - by code')
 
     parser.add_argument('--delete', type=int, default=0,
                         help='version')
@@ -233,6 +243,8 @@ def get_config():
     over_write_args_from_file(args, args.c)
     if args.new_p_cutoff != -1:
         args.p_cutoff = args.new_p_cutoff
+    if args.new_ent_loss_ratio != -1:
+        args.ent_loss_ratio = args.new_ent_loss_ratio
     if args.net_new != "" and args.net_new != "None":
         args.net = args.net_new
     print("args.ulb_loss_ratio 3", args.ulb_loss_ratio)
@@ -249,6 +261,8 @@ def get_config():
     print("args.load_path2",args.load_path)
     print("args.ulb_loss_ratio finish",args.ulb_loss_ratio)
     print(f"end args.dataset is {args.dataset}")
+
+
     return args
 
 
@@ -320,6 +334,25 @@ def set_random(args):
 
 
 
+def create_missing_classes_by_superclasses(args):
+    missing_classes = []
+    coarse_labels = np.array([4, 1, 14, 8, 0, 6, 7, 7, 18, 3,
+                              3, 14, 9, 18, 7, 11, 3, 9, 7, 11,
+                              6, 11, 5, 10, 7, 6, 13, 15, 3, 15,
+                              0, 11, 1, 10, 12, 14, 16, 9, 11, 5,
+                              5, 19, 8, 8, 15, 13, 14, 17, 18, 10,
+                              16, 4, 17, 4, 2, 0, 17, 4, 18, 17,
+                              10, 3, 2, 12, 12, 16, 12, 1, 9, 19,
+                              2, 10, 0, 1, 16, 12, 9, 13, 15, 13,
+                              16, 19, 2, 4, 6, 19, 5, 5, 8, 19,
+                              18, 1, 2, 15, 6, 0, 17, 8, 14, 13])
+    missing_superclasses = random.sample(range(20), k=int(args.random_missing_labels_num/5))
+    print("missing_superclasses",missing_superclasses)
+    for superclass in missing_superclasses:
+        missing_classes.extend(np.where(coarse_labels == superclass)[0])
+    print("missing_classes",missing_classes)
+    return missing_classes
+
 def main_worker(gpu, ngpus_per_node, args):
     '''
     main_worker is conducted on each GPU.
@@ -333,8 +366,13 @@ def main_worker(gpu, ngpus_per_node, args):
     set_random(args)
     print('os.environ["WANDB_CACHE_DIR"]',os.environ["WANDB_CACHE_DIR"])
     if args.random_missing_labels_num != -1:
-        args.missing_labels = random.sample(range(args.num_classes), k=args.random_missing_labels_num)
-        args.missing_labels.sort()
+        if args.split_to_superclasses != 0:
+            print("args.split_to_superclasses!",args.split_to_superclasses)
+            args.missing_labels = create_missing_classes_by_superclasses(args)
+            args.missing_labels.sort()
+        else:
+            args.missing_labels = random.sample(range(args.num_classes), k=args.random_missing_labels_num)
+            args.missing_labels.sort()
     if args.lb_imb_ratio > 1:
         args.num_labels = args.lb_imb_ratio
     args.choose_random_labeled_training_set_unique, args.choose_random_labeled_training_set_counts = [], []

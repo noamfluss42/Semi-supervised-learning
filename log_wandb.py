@@ -135,7 +135,7 @@ def log_wandb_cm(args, epoch, y_true, y_pred, eval_dict):
 
     print("shape cm", cm.shape)
     if len(args.missing_labels) > 0:
-        if args.python_code_version == 2:
+        if args.python_code_version >= 2:
             iteration_validation_clustering_accuracy_with_missing_labels = log_missing_labels_metrics_v2(args, cm,
                                                                                                          epoch, y_true,
                                                                                                          y_pred)

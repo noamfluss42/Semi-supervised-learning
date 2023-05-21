@@ -43,7 +43,7 @@ def get_title(args, epoch):
 
 def wandb_log_cm_img(args, cm, epoch):
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[str(i) for i in range(args.num_classes)])
-    dir_path = f'/cs/labs/daphna/noam.fluss/project/SSL_Benchmark/Semi-supervised-learning/debug_img/{str(args.slurm_job_id)}'
+    dir_path = f'/cs/labs/daphna/noam.fluss/project/SSL_Benchmark/new_forked_semi_supervised_learning/Semi-supervised-learning/debug_img/{str(args.slurm_job_id)}'
     os.mkdir(dir_path)
     current_img_path = f'{dir_path}/current_img_{str(epoch)}_.png'
     disp.plot().figure_.savefig(current_img_path)

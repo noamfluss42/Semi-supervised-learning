@@ -7,7 +7,7 @@
 ## 0-9%4 limits to 4 jobs symultanously, 0-9:4 will run jobs 0,4,8 ${SLURM_JOB_ID}
 #SBATCH --array=0-0
 #SBATCH --exclude=gsm-04,gsm-01,gsm-03
-#SBATCH --output ./hyper_parameter_out6/d-%j.out # STDOUT
+#SBATCH --output ./hyper_parameter_out_cifar100_v2/d-%j.out # STDOUT
 #SBATCH --killable
 #SBATCH --requeue
 dir=/cs/labs/daphna/noam.fluss/project/SSL_Benchmark/new_forked_semi_supervised_learning/Semi-supervised-learning
@@ -57,6 +57,6 @@ python train_v2.py --c config/classic_cv/flexmatch/my_flexmatch/debug_hyper_para
                         --lambda_datapoint_entropy $lambda_datapoint_entropy --project_wandb $project_wandb\
                         --num_labels $num_labels --ulb_loss_ratio $ulb_loss_ratio\
                         --python_code_version $python_code_version --delete $delete\
-                        --weight_decay $weight_decay --thresh_warmup $thresh_warmup
+                        --weight_decay $weight_decay --new_p_cutoff $new_p_cutoff --net_new $net_new
                         ##--missing_labels $missing_labels
 

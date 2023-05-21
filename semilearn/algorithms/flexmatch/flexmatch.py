@@ -1,4 +1,3 @@
-
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
@@ -13,7 +12,8 @@ from semilearn.algorithms.utils import SSL_Argument, str2bool
 import sys
 
 sys.path.append("....")
-from my_loss import main_get_extra_loss, log_loss
+from my_loss import main_get_extra_loss, log_loss, main_get_entropy_with_labeled_data_loss,main_get_entropy_with_labeled_data_loss_v2
+
 
 @ALGORITHMS.register('flexmatch')
 class FlexMatch(AlgorithmBase):
@@ -43,11 +43,12 @@ class FlexMatch(AlgorithmBase):
                 predominant
 
         """
+
     def __init__(self, args, net_builder, tb_log=None, logger=None):
-        super().__init__(args, net_builder, tb_log, logger) 
+        super().__init__(args, net_builder, tb_log, logger)
         # flexmatch specified arguments
         self.init(T=args.T, p_cutoff=args.p_cutoff, hard_label=args.hard_label, thresh_warmup=args.thresh_warmup)
-    
+
     def init(self, T, p_cutoff, hard_label=True, thresh_warmup=True):
         self.T = T
         self.p_cutoff = p_cutoff
@@ -56,7 +57,8 @@ class FlexMatch(AlgorithmBase):
 
     def set_hooks(self):
         self.register_hook(PseudoLabelingHook(), "PseudoLabelingHook")
-        self.register_hook(FlexMatchThresholdingHook(ulb_dest_len=self.args.ulb_dest_len, num_classes=self.num_classes, thresh_warmup=self.args.thresh_warmup), "MaskingHook")
+        self.register_hook(FlexMatchThresholdingHook(ulb_dest_len=self.args.ulb_dest_len, num_classes=self.num_classes,
+                                                     thresh_warmup=self.args.thresh_warmup), "MaskingHook")
 
         super().set_hooks()
 
@@ -73,7 +75,7 @@ class FlexMatch(AlgorithmBase):
                 feats_x_lb = outputs['feat'][:num_lb]
                 feats_x_ulb_w, feats_x_ulb_s = outputs['feat'][num_lb:].chunk(2)
             else:
-                outs_x_lb = self.model(x_lb) 
+                outs_x_lb = self.model(x_lb)
                 logits_x_lb = outs_x_lb['logits']
                 feats_x_lb = outs_x_lb['feat']
                 outs_x_ulb_s = self.model(x_ulb_s)
@@ -83,7 +85,7 @@ class FlexMatch(AlgorithmBase):
                     outs_x_ulb_w = self.model(x_ulb_w)
                     logits_x_ulb_w = outs_x_ulb_w['logits']
                     feats_x_ulb_w = outs_x_ulb_w['feat']
-            feat_dict = {'x_lb':feats_x_lb, 'x_ulb_w':feats_x_ulb_w, 'x_ulb_s':feats_x_ulb_s}
+            feat_dict = {'x_lb': feats_x_lb, 'x_ulb_w': feats_x_ulb_w, 'x_ulb_s': feats_x_ulb_s}
 
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
@@ -96,10 +98,11 @@ class FlexMatch(AlgorithmBase):
                 probs_x_ulb_w = self.call_hook("dist_align", "DistAlignHook", probs_x_ulb=probs_x_ulb_w.detach())
 
             # compute mask
-            mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs_x_ulb_w, softmax_x_ulb=False, idx_ulb=idx_ulb)
-            
+            mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=probs_x_ulb_w, softmax_x_ulb=False,
+                                  idx_ulb=idx_ulb)
+
             # generate unlabeled targets using pseudo label hook
-            pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
+            pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelingHook",
                                           logits=probs_x_ulb_w,
                                           use_hard_label=self.use_hard_label,
                                           T=self.T,
@@ -115,18 +118,27 @@ class FlexMatch(AlgorithmBase):
             total_loss = sup_loss + self.lambda_u * unsup_loss
 
             entropy_loss, datapoint_entropy_loss = main_get_extra_loss(self.args, logits_x_ulb_w)
+            if hasattr(self.args, 'lambda_entropy_with_labeled_data'):
+                entropy_with_labeled_data_loss = main_get_entropy_with_labeled_data_loss(self.args, logits_x_ulb_w,
+                                                                                         logits_x_lb)
+                total_loss += self.args.lambda_entropy_with_labeled_data * entropy_with_labeled_data_loss
+
+            if hasattr(self.args, 'lambda_entropy_with_labeled_data_v2'):
+                entropy_with_labeled_data_loss = main_get_entropy_with_labeled_data_loss_v2(self.args, logits_x_ulb_w,
+                                                                                         logits_x_lb)
+                total_loss += self.args.lambda_entropy_with_labeled_data_v2 * entropy_with_labeled_data_loss
+
             total_loss += self.args.lambda_entropy * entropy_loss + self.args.lambda_datapoint_entropy * datapoint_entropy_loss
 
             super().update_loss_train_epoch(total_loss, sup_loss, unsup_loss, entropy_loss,
                                             datapoint_entropy_loss)
 
         out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
-        log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
-                                         unsup_loss=unsup_loss.item(), 
-                                         total_loss=total_loss.item(), 
+        log_dict = self.process_log_dict(sup_loss=sup_loss.item(),
+                                         unsup_loss=unsup_loss.item(),
+                                         total_loss=total_loss.item(),
                                          util_ratio=mask.float().mean().item())
         return out_dict, log_dict
-        
 
     def get_save_dict(self):
         save_dict = super().get_save_dict()
@@ -152,7 +164,8 @@ class FlexMatch(AlgorithmBase):
         ]
 
     def update_confidence_flexmatch(self, current_pass_mask, current_max_prob_values, current_classwise_acc):
-        super().update_confidence_flexmatch(current_pass_mask=current_pass_mask, current_max_prob_values=current_max_prob_values,
+        super().update_confidence_flexmatch(current_pass_mask=current_pass_mask,
+                                            current_max_prob_values=current_max_prob_values,
                                             current_classwise_acc=current_classwise_acc)
 
     def update_pseudo_label_flexmatch(self, current_pseudo_label, mask):

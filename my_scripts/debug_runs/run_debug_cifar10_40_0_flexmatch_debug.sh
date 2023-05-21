@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --mem=10g
 #SBATCH -c 8
-#SBATCH --time=1-0
+#SBATCH --time=3-0
 #SBATCH --gres=gpu:1,vmem:10g
 ## 10g selects a better GPU, if we're paying for it. 9153189
 ## 0-9%4 limits to 4 jobs symultanously, 0-9:4 will run jobs 0,4,8 ${SLURM_JOB_ID}

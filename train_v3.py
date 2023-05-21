@@ -195,8 +195,11 @@ def get_config():
                         help='the datapoint entropy loss coefficient')
     parser.add_argument('--shell_code_version', type=float, default=0,
                         help='version')
-    parser.add_argument('--python_code_version', type=float, default=2,
+    parser.add_argument('--python_code_version', type=float, default=3,
                         help='version')
+
+    parser.add_argument('--lambda_entropy_with_labeled_data', type=float, default=0,
+                        help='Robust Semi-Supervised Learning when Not All Classes have Labels')
 
     parser.add_argument('--delete', type=int, default=0,
                         help='version')
@@ -249,6 +252,8 @@ def get_config():
     print("args.load_path2",args.load_path)
     print("args.ulb_loss_ratio finish",args.ulb_loss_ratio)
     print(f"end args.dataset is {args.dataset}")
+
+
     return args
 
 

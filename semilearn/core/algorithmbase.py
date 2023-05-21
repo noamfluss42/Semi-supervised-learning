@@ -318,7 +318,7 @@ class AlgorithmBase:
 
     def print_seeds(self,epoch):
         print("start check random state",epoch)
-        print("random.random()",random.random())
+        print("random.random()",random.random()) # 0.9654648863619172
         wandb.log({"random_check/random.random()":random.random()}, step=epoch)
 
         wandb.log({"random_check/np.random.get_state()[1][0]": np.random.get_state()[1][0]}, step=epoch)
@@ -329,7 +329,7 @@ class AlgorithmBase:
         wandb.log({"random_check/torch.backends.cudnn.benchmark": int(torch.backends.cudnn.benchmark)}, step=epoch)
         wandb.log({"random_check/torch.backends.cudnn.deterministic": int(torch.backends.cudnn.deterministic)}, step=epoch)
         wandb.log({"random_check/float(torch.rand(1)[0].item())": float(torch.rand(1)[0].item())}, step=epoch)
-
+# 15565603 2 1
 
     def train(self):
         """
@@ -342,6 +342,7 @@ class AlgorithmBase:
         print("random.randint(0, 900)",random.randint(0, 900))
         print("torch.rand(4)",torch.rand(4))
         print("end check random\n\n\n\n")
+        print("args.p_cutoff",self.args.p_cutoff)
         for epoch in range(self.start_epoch, self.epochs):
             self.epoch = epoch
             print("start epoch", epoch, "self.it", self.it)

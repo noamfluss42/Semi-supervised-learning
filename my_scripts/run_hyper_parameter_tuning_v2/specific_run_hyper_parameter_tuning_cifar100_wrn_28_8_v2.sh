@@ -1,13 +1,15 @@
 #!/bin/bash
-#SBATCH --mem=15g
+#SBATCH --mem=20g
 #SBATCH -c 8
-#SBATCH --time=3-0
-#SBATCH --gres=gpu:1,vmem:15g
+#SBATCH --time=5-0
+#SBATCH --gres=gpu:1,vmem:20g
 ## 10g selects a better GPU, if we're paying for it. 9153189
 ## 0-9%4 limits to 4 jobs symultanously, 0-9:4 will run jobs 0,4,8 ${SLURM_JOB_ID}
 #SBATCH --array=0-0
 #SBATCH --exclude=gsm-04,gsm-01,gsm-03
-#SBATCH --output ./hyper_parameter_out_debug/d_cifar100_not_killable_v2-%j.out # STDOUT
+#SBATCH --output ./hyper_parameter_out_cifar100_wrn_28_8/d-%j.out # STDOUT
+#SBATCH --killable
+#SBATCH --requeue
 dir=/cs/labs/daphna/noam.fluss/project/SSL_Benchmark/new_forked_semi_supervised_learning/Semi-supervised-learning
 
 cd $dir
@@ -40,12 +42,9 @@ echo "num_classes: $num_classes?"
 echo "algorithm: $algorithm?"
 echo "save_dir: $save_dir?"
 echo "dataset: $dataset?"
-echo "new_p_cutoff: $new_p_cutoff?"
-echo "net_new: $net_new?"
-
 ##echo "missing_labels: $missing_labels?"
 echo "slurm_job_id: ${SLURM_JOB_ID}?"
-echo "run specific_run_hyper_parameter_tuning_cifar100_not_killable_v2.sh"
+
 python train_v2.py --c config/classic_cv/flexmatch/my_flexmatch/debug_hyper_parameter_tuning/run_hyper_parameter_tuning/flexmatch_cifar100_40_0_hyperparameter_tuning.yaml\
                         --load_path $load_path --seed $seed --save_name $save_name\
                         --epoch $epoch --num_train_iter $num_train_iter --num_eval_iter $num_eval_iter\

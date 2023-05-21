@@ -7,7 +7,7 @@
 ## 0-9%4 limits to 4 jobs symultanously, 0-9:4 will run jobs 0,4,8 ${SLURM_JOB_ID}
 #SBATCH --array=0-0
 #SBATCH --exclude=gsm-04,gsm-01,gsm-03
-#SBATCH --output ./hyper_parameter_out_debug/d_cifar100_not_killable_v2-%j.out # STDOUT
+#SBATCH --output ./hyper_parameter_out_debug/d-%j.out # STDOUT
 dir=/cs/labs/daphna/noam.fluss/project/SSL_Benchmark/new_forked_semi_supervised_learning/Semi-supervised-learning
 
 cd $dir
@@ -45,8 +45,8 @@ echo "net_new: $net_new?"
 
 ##echo "missing_labels: $missing_labels?"
 echo "slurm_job_id: ${SLURM_JOB_ID}?"
-echo "run specific_run_hyper_parameter_tuning_cifar100_not_killable_v2.sh"
-python train_v2.py --c config/classic_cv/flexmatch/my_flexmatch/debug_hyper_parameter_tuning/run_hyper_parameter_tuning/flexmatch_cifar100_40_0_hyperparameter_tuning.yaml\
+echo "run specific_run_hyper_parameter_tuning_cifar100_not_killable_v3.sh"
+python train_v3.py --c config/classic_cv/flexmatch/my_flexmatch/debug_hyper_parameter_tuning/run_hyper_parameter_tuning/flexmatch_cifar100_40_0_hyperparameter_tuning.yaml\
                         --load_path $load_path --seed $seed --save_name $save_name\
                         --epoch $epoch --num_train_iter $num_train_iter --num_eval_iter $num_eval_iter\
                         --num_classes $num_classes --algorithm $algorithm --save_dir $save_dir\
@@ -58,6 +58,7 @@ python train_v2.py --c config/classic_cv/flexmatch/my_flexmatch/debug_hyper_para
                         --lambda_datapoint_entropy $lambda_datapoint_entropy --project_wandb $project_wandb\
                         --num_labels $num_labels --ulb_loss_ratio $ulb_loss_ratio\
                         --python_code_version $python_code_version --delete $delete\
-                        --weight_decay $weight_decay --new_p_cutoff $new_p_cutoff --net_new $net_new
+                        --weight_decay $weight_decay --new_p_cutoff $new_p_cutoff --net_new $net_new\
+                        --lambda_entropy_with_labeled_data $lambda_entropy_with_labeled_data
                         ##--missing_labels $missing_labels
 

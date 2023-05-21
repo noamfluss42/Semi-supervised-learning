@@ -7,6 +7,8 @@ from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import PseudoLabelingHook
 from semilearn.algorithms.utils import SSL_Argument, str2bool
 
+from my_loss import main_get_extra_loss, log_loss, main_get_entropy_with_labeled_data_loss,main_get_entropy_with_labeled_data_loss_v2
+
 
 # TODO: move these to .utils or algorithms.utils.loss
 def replace_inf_to_zero(val):
@@ -115,9 +117,25 @@ class FreeMatch(AlgorithmBase):
             else:
                ent_loss = 0.0
             # ent_loss = 0.0
+
+
             total_loss = sup_loss + self.lambda_u * unsup_loss + self.lambda_e * ent_loss
 
-            super().update_loss_train_epoch(total_loss, sup_loss, unsup_loss, entropy_loss=ent_loss,
+            entropy_loss_ours, datapoint_entropy_loss = main_get_extra_loss(self.args, logits_x_ulb_w)
+
+            if hasattr(self.args, 'lambda_entropy_with_labeled_data'):
+                entropy_with_labeled_data_loss = main_get_entropy_with_labeled_data_loss(self.args, logits_x_ulb_w,
+                                                                                         logits_x_lb)
+                total_loss += self.args.lambda_entropy_with_labeled_data * entropy_with_labeled_data_loss
+
+            if hasattr(self.args, 'lambda_entropy_with_labeled_data_v2'):
+                entropy_with_labeled_data_loss = main_get_entropy_with_labeled_data_loss_v2(self.args, logits_x_ulb_w,
+                                                                                            logits_x_lb)
+                total_loss += self.args.lambda_entropy_with_labeled_data_v2 * entropy_with_labeled_data_loss
+
+            total_loss += self.args.lambda_entropy * entropy_loss_ours + self.args.lambda_datapoint_entropy * datapoint_entropy_loss
+
+            super().update_loss_train_epoch(total_loss, sup_loss, unsup_loss, entropy_loss=entropy_loss_ours,
                                             datapoint_entropy_loss=0)
 
         out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
