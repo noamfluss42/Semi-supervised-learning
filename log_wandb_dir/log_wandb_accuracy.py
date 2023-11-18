@@ -2,6 +2,7 @@ import numpy as np
 import wandb
 from scipy.optimize import linear_sum_assignment
 
+
 def log_appearing_lables_matrices_v2(args, cm, epoch):
     iteration_validation_accuracy_appearing_lables_count = 0
     for label in range(args.num_classes):
@@ -82,4 +83,3 @@ def log_missing_labels_metrics_v2(args, cm, epoch, y_true, y_pred):
                                                                                    iteration_missing_labels_tp_plus_fp,
                                                                                    iteration_missing_labels_tp_plus_fn)
     return 100 * (iteration_validation_accuracy_appearing_lables_count + iteration_missing_labels_tp) / cm.sum()
-

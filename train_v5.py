@@ -24,7 +24,7 @@ from semilearn.core.utils import get_net_builder, get_logger, get_port, send_mod
     over_write_args_from_file, TBLog
 import wandb
 from wandb_util import *
-
+from log_wandb import log_data_dist_by_unique
 
 class epochs_func(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
@@ -181,6 +181,9 @@ def get_config():
                         help='the number of missing labels to gerate')
     parser.add_argument('--choose_random_labeled_training_set', type=int, default=-1,
                         help='if to choose random labeled dataset - number of labels = args.num_labels')
+    parser.add_argument('--choose_random_labeled_training_set_duplicate', type=int, default=-1,
+                        help='to dupliaate the labeled dataset so for every class there will be the same number of samples (can be duplicated)')
+
     parser.add_argument('--lambda_entropy', default=0, type=float,
                         help='the entropy loss coefficient')
     parser.add_argument('--MNAR_round_type', default="ceil", type=str,
@@ -373,6 +376,7 @@ def main_worker(gpu, ngpus_per_node, args):
         else:
             args.missing_labels = random.sample(range(args.num_classes), k=args.random_missing_labels_num)
             args.missing_labels.sort()
+    wandb.config.update({'missing_labels': args.missing_labels},allow_val_change=True)
     if args.lb_imb_ratio > 1:
         args.num_labels = args.lb_imb_ratio
     args.choose_random_labeled_training_set_unique, args.choose_random_labeled_training_set_counts = [], []
@@ -380,6 +384,7 @@ def main_worker(gpu, ngpus_per_node, args):
         choosing_labels = [random.randint(0, args.num_classes - 1) for i in range(args.num_labels)]
         args.choose_random_labeled_training_set_unique, args.choose_random_labeled_training_set_counts = np.unique(
             choosing_labels, return_counts=True)
+        log_data_dist_by_unique(args, log_string="lb_count/dataset")
 
 
     # SET UP FOR DISTRIBUTED TRAINING

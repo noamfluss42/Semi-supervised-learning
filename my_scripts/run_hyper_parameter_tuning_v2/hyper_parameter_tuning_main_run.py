@@ -25,6 +25,10 @@ algorithm_dataset_net_new_killable_to_shell = {
                                                  "new_forked_semi_supervised_learning/Semi-supervised-learning/"
                                                  "my_scripts/run_hyper_parameter_tuning_v2/"
                                                  "specific_run_hyper_parameter_tuning_cifar100_wrn_28_8_v2.sh",
+    ("flexmatch", "cifar100", "wrn_28_8", False): "/cs/labs/daphna/noam.fluss/project/SSL_Benchmark/"
+                                                  "new_forked_semi_supervised_learning/Semi-supervised-learning/"
+                                                  "my_scripts/run_hyper_parameter_tuning_v2/"
+                                                  "specific_run_hyper_parameter_tuning_cifar100_wrn_28_8_v6_not_killable.sh",
 
     ("softmatch", "cifar10", "None", True): "/cs/labs/daphna/noam.fluss/project/SSL_Benchmark/"
                                             "new_forked_semi_supervised_learning/Semi-supervised-learning/"
@@ -57,11 +61,9 @@ algorithm_dataset_net_new_killable_to_shell = {
                                              "specific_run_hyper_parameter_tuning_cifar100_v2_adamatch_not_killable.sh",
 
     ("adamatch", "cifar100", "wrn_28_8", True): "/cs/labs/daphna/noam.fluss/project/SSL_Benchmark/"
-                                            "new_forked_semi_supervised_learning/Semi-supervised-learning/"
-                                            "my_scripts/run_hyper_parameter_tuning_v2/adamatch/"
-                                            "specific_run_hyper_parameter_tuning_cifar100_wrn_28_8_v4_adamatch.sh",
-
-
+                                                "new_forked_semi_supervised_learning/Semi-supervised-learning/"
+                                                "my_scripts/run_hyper_parameter_tuning_v2/adamatch/"
+                                                "specific_run_hyper_parameter_tuning_cifar100_wrn_28_8_v4_adamatch.sh",
 
     ("comatch", "cifar100", "None", True): "/cs/labs/daphna/noam.fluss/project/SSL_Benchmark/"
                                            "new_forked_semi_supervised_learning/Semi-supervised-learning/"
@@ -72,11 +74,9 @@ algorithm_dataset_net_new_killable_to_shell = {
                                             "my_scripts/run_hyper_parameter_tuning_v2/comatch/"
                                             "specific_run_hyper_parameter_tuning_cifar100_v2_comatch_not_killable.sh",
     ("comatch", "cifar100", "wrn_28_8", True): "/cs/labs/daphna/noam.fluss/project/SSL_Benchmark/"
-                                           "new_forked_semi_supervised_learning/Semi-supervised-learning/"
-                                           "my_scripts/run_hyper_parameter_tuning_v2/comatch/"
-                                           "specific_run_hyper_parameter_tuning_cifar100_wrn_28_8_v4_comatch.sh",
-
-
+                                               "new_forked_semi_supervised_learning/Semi-supervised-learning/"
+                                               "my_scripts/run_hyper_parameter_tuning_v2/comatch/"
+                                               "specific_run_hyper_parameter_tuning_cifar100_wrn_28_8_v4_comatch.sh",
 
     ("freematch", "cifar100", "None", True): "/cs/labs/daphna/noam.fluss/project/SSL_Benchmark/"
                                              "new_forked_semi_supervised_learning/Semi-supervised-learning/"
@@ -86,10 +86,15 @@ algorithm_dataset_net_new_killable_to_shell = {
                                               "new_forked_semi_supervised_learning/Semi-supervised-learning/"
                                               "my_scripts/run_hyper_parameter_tuning_v2/freematch/"
                                               "specific_run_hyper_parameter_tuning_cifar100_v5_freematch_not_killable.sh",
-    ("freematch", "cifar100", "None", True): "/cs/labs/daphna/noam.fluss/project/SSL_Benchmark/"
-                                              "new_forked_semi_supervised_learning/Semi-supervised-learning/"
-                                              "my_scripts/run_hyper_parameter_tuning_v2/freematch/"
-                                              "specific_run_hyper_parameter_tuning_cifar100_wrn_28_8_v4_freematch.sh",
+    ("freematch", "cifar100", "wrn_28_8", True): "/cs/labs/daphna/noam.fluss/project/SSL_Benchmark/"
+                                                 "new_forked_semi_supervised_learning/Semi-supervised-learning/"
+                                                 "my_scripts/run_hyper_parameter_tuning_v2/freematch/"
+                                                 "specific_run_hyper_parameter_tuning_cifar100_wrn_28_8_v4_freematch.sh",
+
+    ("freematch", "cifar100", "wrn_28_2", True): "/cs/labs/daphna/noam.fluss/project/SSL_Benchmark/"
+                                                 "new_forked_semi_supervised_learning/Semi-supervised-learning/"
+                                                 "my_scripts/run_hyper_parameter_tuning_v2/freematch/"
+                                                 "specific_run_hyper_parameter_tuning_cifar100_v6_freematch.sh",
 
 }
 
@@ -161,22 +166,30 @@ def complete_values(parameters_dict):
         parameters_dict["new_ent_loss_ratio"] = -1
     if parameters_dict["python_code_version"] >= 5 and "split_to_superclasses" not in parameters_dict:
         parameters_dict["split_to_superclasses"] = 0
+    if parameters_dict["python_code_version"] >= 6 and "comment" not in parameters_dict:
+        parameters_dict["comment"] = 0
+    if parameters_dict["python_code_version"] >= 6 and "batch_size" not in parameters_dict:
+        parameters_dict["batch_size"] = 64
+    if parameters_dict[
+        "python_code_version"] >= 6 and "choose_random_labeled_training_set_duplicate" not in parameters_dict:
+        parameters_dict["choose_random_labeled_training_set_duplicate"] = -1
     # if "comment" not in parameters_dict:
     #     parameters_dict["comment"] = 0
 
 
 def update_file_by_python_code_version(shell_file, parameters_dict):
     print("start update_file_by_python_code_version")
-    print("original shell_file",shell_file)
+    print("original shell_file", shell_file)
     print(f"python_code_version - {parameters_dict['python_code_version']}")
-    if f"v{parameters_dict['python_code_version']}" in shell_file:
+    start_replace_index = len("/cs/labs/daphna/noam.fluss/"
+                              "project/SSL_Benchmark/new_forked_semi_supervised_learning/"
+                              "Semi-supervised-learning/my_scripts/run_hyper_parameter_tuning_v2") + 1
+    if f"v{parameters_dict['python_code_version']}" in shell_file[start_replace_index:]:
         return shell_file
     else:
         for v in range(parameters_dict['python_code_version']):
-            if f"v{v}" in shell_file:
-                start_replace_index = len("/cs/labs/daphna/noam.fluss/"
-                                          "project/SSL_Benchmark/new_forked_semi_supervised_learning/"
-                                          "Semi-supervised-learning/my_scripts/run_hyper_parameter_tuning_v2") + 1
+
+            if f"v{v}" in shell_file[start_replace_index:]:
                 return shell_file[:start_replace_index] + \
                        shell_file[start_replace_index:].replace(f"v{v}", f"v{parameters_dict['python_code_version']}")
     exit(f"version number ({parameters_dict['python_code_version']}) not in name - {shell_file}")
@@ -189,6 +202,8 @@ def main(parameters_dict, killable=True, seed_start=0, seed_end=5):
     print("len keys_update", len(keys))
     for i in range(seed_start, seed_end):
         print("seed - ", i)
+        print("parameters_dict")
+        pprint.pprint(parameters_dict)
         parameters_dict["seed"] = i
         parameters_dict[
             "save_name"] = f"{parameters_dict['algorithm']}_{parameters_dict['dataset']}_{i}"
@@ -199,43 +214,5 @@ def main(parameters_dict, killable=True, seed_start=0, seed_end=5):
         print("shell_file", shell_file)
         run_batch_list_option(parameters_dict, keys, 0,
                               ["sbatch", shell_file])
-        #
-        # if parameters_dict["algorithm"] == "flexmatch" and parameters_dict["net_new"] == "wrn_28_8":
-        #     run_batch_list_option(parameters_dict, keys, 0,
-        #                           ["sbatch", "specific_run_hyper_parameter_tuning_cifar100_wrn_28_8.sh"])
-        # elif parameters_dict["algorithm"] == "comatch":
-        #     run_batch_list_option(parameters_dict, keys, 0,
-        #                           ["sbatch", "specific_run_hyper_parameter_tuning_v2_comatch.sh"])
-        # elif parameters_dict["algorithm"] == "adamatch":
-        #     if parameters_dict["dataset"] == "cifar100":
-        #         if killable:
-        #             run_batch_list_option(parameters_dict, keys, 0,
-        #                                   ["sbatch",
-        #                                    "/cs/labs/daphna/noam.fluss/project/SSL_Benchmark/"
-        #                                    "new_forked_semi_supervised_learning/Semi-supervised-learning/"
-        #                                    "my_scripts/run_hyper_parameter_tuning_v2/adamatch/"
-        #                                    "specific_run_hyper_parameter_tuning_cifar100_v2_adamatch.sh"])
-        #         else:
-        #
-        #             run_batch_list_option(parameters_dict, keys, 0,
-        #                                   ["sbatch",
-        #                                    "/cs/labs/daphna/noam.fluss/project/SSL_Benchmark/"
-        #                                    "new_forked_semi_supervised_learning/Semi-supervised-learning/"
-        #                                    "my_scripts/run_hyper_parameter_tuning_v2/adamatch/"
-        #                                    "specific_run_hyper_parameter_tuning_cifar100_v2_adamatch_not_killable.sh"])
-        #     else:
-        #         run_batch_list_option(parameters_dict, keys, 0,
-        #                               ["sbatch", "specific_run_hyper_parameter_tuning_v2_adamatch.sh"])
-        # elif parameters_dict["dataset"] == "cifar10" and killable:
-        #     run_batch_list_option(parameters_dict, keys, 0, ["sbatch", "specific_run_hyper_parameter_tuning_v2.sh"])
-        # elif parameters_dict["dataset"] == "cifar100" and killable:
-        #     run_batch_list_option(parameters_dict, keys, 0,
-        #                           ["sbatch", "specific_run_hyper_parameter_tuning_cifar100_v2.sh"])
-        # elif parameters_dict["dataset"] == "cifar100" and not killable:
-        #     print("test 1")
-        #     run_batch_list_option(parameters_dict, keys, 0,
-        #                           ["sbatch", "specific_run_hyper_parameter_tuning_cifar100_not_killable_v2.sh"])
-        # elif parameters_dict["dataset"] == "cifar10" and not killable:
-        #     run_batch_list_option(parameters_dict, keys, 0,
-        #                           ["sbatch", "specific_run_hyper_parameter_tuning_not_killable_v2.sh"])
+
         print(f"end seed - {i}")

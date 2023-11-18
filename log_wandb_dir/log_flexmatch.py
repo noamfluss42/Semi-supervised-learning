@@ -108,11 +108,7 @@ def log_flexmatch(args, pass_mask, max_probs_values, classwise_acc, p_cutoff, al
         all_pseudo_label_after_mask: len = #number of classes, the number of pseudo labels per class for all iter of epoch
         epoch: int, step number
     """
-    print("pass_mask",pass_mask)
-    print("max_probs_values",max_probs_values)
-    print("classwise_acc",classwise_acc)
-    print("p_cutoff",p_cutoff)
-    print("all_pseudo_label_after_mask",all_pseudo_label_after_mask)
+
     pass_mask = pass_mask.astype(int)
     ulb_mimi_batch_size = int(args.batch_size * args.uratio)
     steps_per_epoch = int(args.num_train_iter / args.epoch)

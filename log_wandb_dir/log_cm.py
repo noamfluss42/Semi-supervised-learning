@@ -11,7 +11,6 @@ import os
 def print_cm(y_true, y_pred):
     cf_mat = confusion_matrix(y_true, y_pred, normalize='true')
     cf_mat_not_norm = confusion_matrix(y_true, y_pred)
-    print('confusion matrix - normalize:\n' + np.array_str(cf_mat))
     print('confusion matrix - not normalize:\n' + np.array_str(cf_mat_not_norm))
 
 

@@ -5,9 +5,6 @@ resume: False
 load_path: ./saved_models/classic_cv/debug_flexmatch_cifar100_400_0/latest_model.pth
 overwrite: True
 use_tensorboard: True
-epoch: 10
-num_train_iter: 10240
-num_eval_iter: 1024
 num_labels: 400
 batch_size: 64
 eval_batch_size: 256
@@ -34,8 +31,7 @@ data_dir: ./data
 dataset: cifar100
 train_sampler: RandomSampler
 num_classes: 100
-num_workers: 1
-seed: 0
+num_workers: 0
 world_size: 1
 rank: 0
 multiprocessing_distributed: False

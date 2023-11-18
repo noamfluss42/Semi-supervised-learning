@@ -1,5 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+import csv
+import math
 
 import os
 import random
@@ -11,6 +13,38 @@ from io import BytesIO
 import wandb
 # TODO: better way
 base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+# PATH_TRAIN_RELATIVE = "/cs/labs/daphna/noam.fluss/project/SSL_Benchmark/new_forked_semi_supervised_learning/Semi-supervised-learning/semilearn/datasets"
+PATH_TRAIN_RELATIVE = r"C:\Users\noamf\Documents\thesis\code\SSL_Benchmark\new_forked_semi_supervised_learning\Semi-supervised-learning"
+TRAIN_RELATIVE_10 = np.loadtxt(os.path.join(PATH_TRAIN_RELATIVE,"train_relative_10.csv"), delimiter=',')
+TRAIN_RELATIVE_50 = np.loadtxt(os.path.join(PATH_TRAIN_RELATIVE,"train_relative_50.csv"), delimiter=',')
+TRAIN_RELATIVE_100 = np.loadtxt(os.path.join(PATH_TRAIN_RELATIVE,"train_relative_100.csv"), delimiter=',')
+TRAIN_RELATIVE_DICT = {10: TRAIN_RELATIVE_10, 50: TRAIN_RELATIVE_50, 100: TRAIN_RELATIVE_100}
+print("base dir",base_dir,"\n\n",os.getcwd())
+
+
+def create_labeled_data(args,ulb_data, ulb_targets):
+    print("!")
+    if args.lt_choose_labeled_data_randomly == 1:
+        print("lb_idx = random.sample(range(len(ulb_data)), args.num_labels)",args.num_labels)
+        lb_idx = random.sample(range(len(ulb_data)), args.num_labels)
+    else:
+        lb_idx = np.array([])
+        for current_train_relative_index in range(len(TRAIN_RELATIVE_DICT[args.lt_ratio])):
+            current_train_relative = TRAIN_RELATIVE_DICT[args.lt_ratio][current_train_relative_index]
+            print("current_train_relative",current_train_relative)
+            current_target_count = math.ceil(current_train_relative * args.num_labels)
+            current_indices = np.random.choice(np.where(ulb_targets == current_train_relative_index)[0], current_target_count, replace=False)
+            lb_idx = np.concatenate((lb_idx, current_indices))
+        lb_idx = lb_idx.astype(int)
+    return ulb_data[lb_idx], ulb_targets[lb_idx]
+
+def get_cifar_lt_indices(args, test_or_train):
+    filename = f'{test_or_train}_indices_{args.lt_ratio}.csv'
+    filename = os.path.join(PATH_TRAIN_RELATIVE, filename)
+    with open(filename, 'r') as file:
+        indices = [int(index) for row in csv.reader(file) for index in row]
+
+    return indices
 
 
 def split_ssl_data(args, data, targets, num_classes,
@@ -48,7 +82,14 @@ def split_ssl_data(args, data, targets, num_classes,
 
     if include_lb_to_ulb:
         ulb_idx = np.concatenate([lb_idx, ulb_idx], axis=0)
-    
+    if args.python_code_version >= 11:
+        if args.lt_ratio != 1:
+            ulb_idx = get_cifar_lt_indices(args, "train")
+            print("debug lt_ratio")
+            print("np.unique(targets[ulb_idx], return_counts=True)")
+            print(np.unique(targets[ulb_idx], return_counts=True))
+
+
     return data[lb_idx], targets[lb_idx], data[ulb_idx], targets[ulb_idx]
 
 
@@ -78,8 +119,8 @@ def sample_labeled_unlabeled_data(args, data, target, num_classes,
     # get samples per class
     if lb_imbalance_ratio == 1.0:
         # balanced setting, lb_num_labels is total number of labels for labeled data
-        assert lb_num_labels % num_classes == 0, "lb_num_labels must be dividable by num_classes in balanced setting lb_num_labels" + str(
-            lb_num_labels) + " num_classes" + str(num_classes)
+        assert lb_num_labels % num_classes == 0, "lb_num_labels must be dividable by num_classes in balanced setting lb_num_labels " + str(
+            lb_num_labels) + " num_classes " + str(num_classes)
         lb_samples_per_class = [int(lb_num_labels / num_classes)] * num_classes
     else:
         # imbalanced setting, lb_num_labels is the maximum number of labels for class 1

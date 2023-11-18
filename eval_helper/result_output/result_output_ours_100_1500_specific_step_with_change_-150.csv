@@ -1,0 +1,6 @@
+accuracy/iteration validation clustering accuracy with missing labels,accuracy/iteration validation accuracy appearing lables,accuracy/iteration validation accuracy missing labels recall,accuracy/iteration validation accuracy missing labels precision,accuracy/iteration validation balanced accuracy,accuracy/iteration validation balanced precision,accuracy/iteration validation F1 score,accuracy/iteration validation F1_score_seen,accuracy/iteration validation F1_score_unseen
+31.82,19.05,33.86,32.89,17.63,16.73,17.17,9.62,28.5
+28.3,20.41,29.56,30.34,16.21,12.93,14.39,9.99,20.9
+29.7,19.39,31.36,31.15,17.58,14.84,16.09,11.29,23.27
+29.0,20.41,30.38,31.0,16.62,12.94,14.55,10.98,19.9
+30.83,18.37,32.83,32.77,17.17,15.75,16.43,9.08,27.35

@@ -1,0 +1,5 @@
+Combine score - accuracy of seen + clustering of unseen 42.78
+seen classes accuracy 70.65
+unseen classes recall 0.98
+unseen classes precision 14.83
+chosen_threshold 0.37

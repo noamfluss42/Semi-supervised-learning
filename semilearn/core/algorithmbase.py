@@ -117,6 +117,11 @@ class AlgorithmBase:
                                  "unsup_loss": 0,
                                  "entropy_loss": 0,
                                  "datapoint_entropy_loss": 0}
+        if args.algorithm == "freematch":
+            self.loss_train_epoch["freematch_ent_loss"] = 0
+        if args.python_code_version >= 11:
+            self.loss_train_epoch["kl_divergence_loss"] = 0
+
 
         self.log_wandb_epoch = 0
         self.reset_confidence()
@@ -134,12 +139,18 @@ class AlgorithmBase:
         self.all_max_probs_values = np.empty(0)
         self.all_pseudo_label_after_mask = np.array([0 for i in range(self.num_classes)])
 
-    def update_loss_train_epoch(self, total_loss, sup_loss, unsup_loss, entropy_loss, datapoint_entropy_loss):
+    def update_loss_train_epoch(self, total_loss, sup_loss, unsup_loss, entropy_loss, datapoint_entropy_loss,
+                                freematch_ent_loss = None,kl_divergence_loss = None):
         self.loss_train_epoch["total_loss"] += total_loss
         self.loss_train_epoch["sup_loss"] += sup_loss
         self.loss_train_epoch["unsup_loss"] += unsup_loss
         self.loss_train_epoch["entropy_loss"] += entropy_loss
         self.loss_train_epoch["datapoint_entropy_loss"] += datapoint_entropy_loss
+        if freematch_ent_loss is not None:
+            self.loss_train_epoch["freematch_ent_loss"] += freematch_ent_loss
+        if kl_divergence_loss is not None:
+            self.loss_train_epoch["kl_divergence_loss"] += kl_divergence_loss
+
 
     def set_dataset(self):
         """
@@ -342,7 +353,6 @@ class AlgorithmBase:
         print("random.randint(0, 900)",random.randint(0, 900))
         print("torch.rand(4)",torch.rand(4))
         print("end check random\n\n\n\n")
-        print("args.p_cutoff",self.args.p_cutoff)
         for epoch in range(self.start_epoch, self.epochs):
             self.epoch = epoch
             print("start epoch", epoch, "self.it", self.it)
@@ -357,10 +367,15 @@ class AlgorithmBase:
             print("finish before_train_epoch", "self.epoch", self.epoch)
             for data_lb, data_ulb in zip(self.loader_dict['train_lb'],
                                          self.loader_dict['train_ulb']):
+
                 # prevent the training iterations exceed args.num_train_iter
+                # if self.args.python_code_version >= 7:
+                    # count_data = [0 for _ in range(self.args.num_classes)]
+                    # for c in labels_in_data:
+                    #     count_data[c] += 1
+                    #log_data_dist(args, ulb_count, "dataset/data_lb dist",epoch = epoch)
                 if self.it >= self.num_train_iter:
                     break
-
                 self.call_hook("before_train_step")
                 self.out_dict, self.log_dict = self.train_step(**self.process_batch(**data_lb, **data_ulb))
                 self.call_hook("after_train_step")
@@ -381,6 +396,7 @@ class AlgorithmBase:
         print("start evaluate", "log_wandb - ", log_wandb)
         print("self.epoch", self.epoch)
         print("self.it", self.it)
+        print("log_wandb_epoch",log_wandb_epoch)
         self.model.eval()
         self.ema.apply_shadow()
 

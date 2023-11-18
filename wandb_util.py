@@ -7,7 +7,7 @@ def get_run_id(name, author='noam-fluss', project='fixmatch_debug'):
     #         project == "fixmatch_long_tail_confidence" or \
     #         project == "test" or project == "Flexmatch_first_project" or project == "Flexmatch_second_project":
     author = "noam_fluss_mail"
-    api = wandb.Api()
+    api = wandb.Api(timeout=19)
     runs = api.runs(f"{author}/{project}",
                     {"$or": [
                         # {"config.experiment_name": "foo"},

@@ -6,20 +6,26 @@ import os
 
 from .hook import Hook
 
+
 class CheckpointHook(Hook):
     """
     Checkpoint Hook for saving checkpoint
     """
+
     def after_train_step(self, algorithm):
         # must be called after evaluation for saving the best
-        if self.every_n_iters(algorithm, algorithm.num_eval_iter) or self.is_last_iter(algorithm):
+        if self.every_n_iters(algorithm, int(algorithm.num_eval_iter / 2)) or self.is_last_iter(algorithm):
             save_path = os.path.join(algorithm.save_dir, algorithm.save_name)
-            
+
             if (not algorithm.distributed) or \
-               (algorithm.distributed and algorithm.rank % algorithm.ngpus_per_node == 0):
+                    (algorithm.distributed and algorithm.rank % algorithm.ngpusuu_per_node == 0):
                 algorithm.save_model('latest_model.pth', save_path)
 
                 if algorithm.it == algorithm.best_it:
                     algorithm.save_model('model_best.pth', save_path)
 
-        
+            if self.every_n_iters(algorithm, int(algorithm.num_eval_iter)) and algorithm.args.python_code_version >= 8:
+                if algorithm.args.save_all_models == 1:
+                    algorithm.save_model(f'model_{algorithm.epoch}_.pth', save_path)
+
+

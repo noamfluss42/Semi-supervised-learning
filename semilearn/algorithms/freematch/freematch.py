@@ -7,13 +7,15 @@ from semilearn.core.utils import ALGORITHMS
 from semilearn.algorithms.hooks import PseudoLabelingHook
 from semilearn.algorithms.utils import SSL_Argument, str2bool
 
-from my_loss import main_get_extra_loss, log_loss, main_get_entropy_with_labeled_data_loss,main_get_entropy_with_labeled_data_loss_v2
+from my_loss import main_get_extra_loss, log_loss, main_get_entropy_with_labeled_data_loss, \
+    main_get_entropy_with_labeled_data_loss_v2, get_kl_divergence_loss
 
 
 # TODO: move these to .utils or algorithms.utils.loss
 def replace_inf_to_zero(val):
     val[val == float('inf')] = 0.0
     return val
+
 
 def entropy_loss(mask, logits_s, prob_model, label_hist):
     mask = mask.bool()
@@ -49,8 +51,9 @@ def entropy_loss(mask, logits_s, prob_model, label_hist):
 @ALGORITHMS.register('freematch')
 class FreeMatch(AlgorithmBase):
     def __init__(self, args, net_builder, tb_log=None, logger=None):
-        super().__init__(args, net_builder, tb_log, logger) 
-        self.init(T=args.T, hard_label=args.hard_label, ema_p=args.ema_p, use_quantile=args.use_quantile, clip_thresh=args.clip_thresh)
+        super().__init__(args, net_builder, tb_log, logger)
+        self.init(T=args.T, hard_label=args.hard_label, ema_p=args.ema_p, use_quantile=args.use_quantile,
+                  clip_thresh=args.clip_thresh)
         self.lambda_e = args.ent_loss_ratio
 
     def init(self, T, hard_label=True, ema_p=0.999, use_quantile=True, clip_thresh=False):
@@ -60,12 +63,29 @@ class FreeMatch(AlgorithmBase):
         self.use_quantile = use_quantile
         self.clip_thresh = clip_thresh
 
-
     def set_hooks(self):
         self.register_hook(PseudoLabelingHook(), "PseudoLabelingHook")
-        self.register_hook(FreeMatchThresholingHook(num_classes=self.num_classes, momentum=self.args.ema_p), "MaskingHook")
+        self.register_hook(FreeMatchThresholingHook(num_classes=self.num_classes, momentum=self.args.ema_p),
+                           "MaskingHook")
         super().set_hooks()
 
+    def get_new_lambda_after_collapse_epoch(self):
+        lambda_entropy_to_add = 0
+        lambda_datapoint_entropy_to_add = 0
+        if self.args.lambda_entropy_decay_value != -1 or self.args.lambda_entropy_decay_rate != -1:
+            lambda_entropy_to_add = self.args.lambda_entropy
+            lambda_datapoint_entropy_to_add = self.args.lambda_datapoint_entropy
+            if self.args.lambda_entropy_decay_value != -1:
+                lambda_entropy_to_add -= self.args.lambda_entropy_decay_value
+                lambda_datapoint_entropy_to_add -= self.args.lambda_entropy_decay_value
+            if self.args.lambda_entropy_decay_rate != -1:
+                lambda_entropy_to_add -= (self.epoch - self.args.lambda_entropy_stop_epoch) * \
+                                         self.args.lambda_entropy_decay_rate
+                lambda_datapoint_entropy_to_add -= (self.epoch - self.args.lambda_entropy_stop_epoch) * \
+                                                   self.args.lambda_entropy_decay_rate
+            lambda_entropy_to_add = max(lambda_entropy_to_add, 0)
+            lambda_datapoint_entropy_to_add = max(lambda_datapoint_entropy_to_add, 0)
+        return lambda_entropy_to_add, lambda_datapoint_entropy_to_add
 
     def train_step(self, x_lb, y_lb, x_ulb_w, x_ulb_s):
         num_lb = y_lb.shape[0]
@@ -80,7 +100,7 @@ class FreeMatch(AlgorithmBase):
                 feats_x_lb = outputs['feat'][:num_lb]
                 feats_x_ulb_w, feats_x_ulb_s = outputs['feat'][num_lb:].chunk(2)
             else:
-                outs_x_lb = self.model(x_lb) 
+                outs_x_lb = self.model(x_lb)
                 logits_x_lb = outs_x_lb['logits']
                 feats_x_lb = outs_x_lb['feat']
                 outs_x_ulb_s = self.model(x_ulb_s)
@@ -90,34 +110,31 @@ class FreeMatch(AlgorithmBase):
                     outs_x_ulb_w = self.model(x_ulb_w)
                     logits_x_ulb_w = outs_x_ulb_w['logits']
                     feats_x_ulb_w = outs_x_ulb_w['feat']
-            feat_dict = {'x_lb':feats_x_lb, 'x_ulb_w':feats_x_ulb_w, 'x_ulb_s':feats_x_ulb_s}
-
+            feat_dict = {'x_lb': feats_x_lb, 'x_ulb_w': feats_x_ulb_w, 'x_ulb_s': feats_x_ulb_s}
 
             sup_loss = self.ce_loss(logits_x_lb, y_lb, reduction='mean')
 
             # calculate mask
             mask = self.call_hook("masking", "MaskingHook", logits_x_ulb=logits_x_ulb_w)
 
-
             # generate unlabeled targets using pseudo label hook
-            pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelingHook", 
+            pseudo_label = self.call_hook("gen_ulb_targets", "PseudoLabelingHook",
                                           logits=logits_x_ulb_w,
                                           use_hard_label=self.use_hard_label,
                                           T=self.T)
-            
+
             # calculate unlabeled loss
             unsup_loss = self.consistency_loss(logits_x_ulb_s,
-                                          pseudo_label,
-                                          'ce',
-                                          mask=mask)
-            
+                                               pseudo_label,
+                                               'ce',
+                                               mask=mask)
+
             # calculate entropy loss
             if mask.sum() > 0:
-               ent_loss, _ = entropy_loss(mask, logits_x_ulb_s, self.p_model, self.label_hist)
+                ent_loss, _ = entropy_loss(mask, logits_x_ulb_s, self.p_model, self.label_hist)
             else:
-               ent_loss = 0.0
+                ent_loss = 0.0
             # ent_loss = 0.0
-
 
             total_loss = sup_loss + self.lambda_u * unsup_loss + self.lambda_e * ent_loss
 
@@ -135,13 +152,30 @@ class FreeMatch(AlgorithmBase):
 
             total_loss += self.args.lambda_entropy * entropy_loss_ours + self.args.lambda_datapoint_entropy * datapoint_entropy_loss
 
-            super().update_loss_train_epoch(total_loss, sup_loss, unsup_loss, entropy_loss=entropy_loss_ours,
-                                            datapoint_entropy_loss=0)
+            if self.args.python_code_version >= 10:
+                if self.epoch > self.args.lambda_entropy_stop_epoch and self.args.lambda_entropy_stop_epoch != -1:
+                    print("change lambda entropy")
+                    total_loss -= self.args.lambda_entropy * entropy_loss + self.args.lambda_datapoint_entropy * datapoint_entropy_loss
+                    lambda_entropy_to_add, lambda_datapoint_entropy_to_add = self.get_new_lambda_after_collapse_epoch()
+                    total_loss += lambda_entropy_to_add * entropy_loss + lambda_datapoint_entropy_to_add * \
+                                  datapoint_entropy_loss
+            if self.args.python_code_version >= 11:
+                if self.args.lambda_kl_divergence != 0:
+                    kl_divergence_loss = get_kl_divergence_loss(self.args, logits_x_ulb_w)
+                else:
+                    kl_divergence_loss = 0
+                total_loss += self.args.lambda_kl_divergence * kl_divergence_loss
+                super().update_loss_train_epoch(total_loss, sup_loss, unsup_loss, entropy_loss=entropy_loss_ours,
+                                                datapoint_entropy_loss=0, freematch_ent_loss=ent_loss,
+                                                kl_divergence_loss=kl_divergence_loss)
+            else:
+                super().update_loss_train_epoch(total_loss, sup_loss, unsup_loss, entropy_loss=entropy_loss_ours,
+                                                datapoint_entropy_loss=0, freematch_ent_loss=ent_loss)
 
         out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
-        log_dict = self.process_log_dict(sup_loss=sup_loss.item(), 
-                                         unsup_loss=unsup_loss.item(), 
-                                         total_loss=total_loss.item(), 
+        log_dict = self.process_log_dict(sup_loss=sup_loss.item(),
+                                         unsup_loss=unsup_loss.item(),
+                                         total_loss=total_loss.item(),
                                          util_ratio=mask.float().mean().item())
         return out_dict, log_dict
 
@@ -152,7 +186,6 @@ class FreeMatch(AlgorithmBase):
         save_dict['time_p'] = self.hooks_dict['MaskingHook'].time_p.cpu()
         save_dict['label_hist'] = self.hooks_dict['MaskingHook'].label_hist.cpu()
         return save_dict
-
 
     def load_model(self, load_path):
         checkpoint = super().load_model(load_path)

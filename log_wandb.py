@@ -11,6 +11,7 @@ import shutil
 from log_wandb_dir.log_wandb_accuracy import log_missing_labels_metrics_v2
 from log_wandb_dir.log_flexmatch import log_flexmatch
 from log_wandb_dir.log_cm import *
+from log_wandb_dir.log_labeled_dist_config import log_labeled_dist_config_main
 
 
 def log_confidence(args, all_logits, epoch, max_mask_percentage, max_mask_percentage_per_class, threshold_all_classes,
@@ -80,6 +81,38 @@ def log_data_dist(args, count_data, log_string, epoch=0):
     plt.close()
 
 
+def log_data_dist_by_array(args, full_log_string, array, epoch=0):
+    fig, ax = plt.subplots()
+    ax.bar(list(range(args.num_classes)), array)  # counts_sort, unique_sort)
+    wandb.log({full_log_string: fig}, step=epoch)
+    plt.close()
+
+def log_count_data_dist_by_array(args, full_log_string, array, epoch=0):
+    unique_data,counts = np.unique(array,return_counts = True)
+    count_data_array = [counts[np.where(unique_data == i)[0]][0] if i in unique_data else 0 for i in range(args.num_classes)]
+    print("count_data_all_classes", count_data_array)
+    log_data_dist_by_array(args, full_log_string, count_data_array, epoch)
+
+def log_data_dist_by_unique(args, log_string, epoch=0):
+    unique_data_all_classes = [1 if i in args.choose_random_labeled_training_set_unique else 0 for i in
+                               range(args.num_classes)]
+    log_data_dist_by_array(args, log_string + " unique", unique_data_all_classes, epoch)
+
+    unseen_data_all_classes = [1 if i not in args.choose_random_labeled_training_set_unique else 0 for i in
+                               range(args.num_classes)]
+    log_data_dist_by_array(args, log_string + " unseen", unseen_data_all_classes, epoch)
+
+    count_data_all_classes = [
+        args.choose_random_labeled_training_set_counts[np.where(args.choose_random_labeled_training_set_unique == i)[
+            0]] if i in args.choose_random_labeled_training_set_unique else 0 for i in
+        range(args.num_classes)]
+    for i in range(len(count_data_all_classes)):
+        if type(count_data_all_classes[i]) == np.ndarray:
+            count_data_all_classes[i] = count_data_all_classes[i][0]
+    print("count_data_all_classes", count_data_all_classes)
+    log_data_dist_by_array(args, log_string + " count", count_data_all_classes, epoch)
+
+
 def wandb_log_best_permutation_acc(args, cm, epoch, eval_dict,
                                    iteration_validation_clustering_accuracy_with_missing_labels=None):
     row_ind, col_ind = linear_sum_assignment(cm, maximize=True)
@@ -143,7 +176,7 @@ def log_wandb_cm(args, epoch, y_true, y_pred, eval_dict):
                                        iteration_validation_clustering_accuracy_with_missing_labels)
     if len(args.missing_labels) == 0:
         wandb_log_best_permutation_acc(args, cm, epoch, eval_dict)
-    if args.num_classes <= 10:
+    if args.num_classes <= 10 and args.dataset != "stl10":
         if args.num_classes <= 10:
             wandb_log_cm_img(args, cm, epoch)
             wandb_log_cm_last_instance(y_true=y_true,
@@ -164,6 +197,14 @@ def log_loss(args, epoch, loss_train_epoch):
     wandb.log({"loss_in_total_loss/total_loss": loss_train_epoch["total_loss"]}, step=epoch)
     wandb.log({"loss_in_total_loss/sup_loss": loss_train_epoch["sup_loss"]}, step=epoch)
     wandb.log({"loss_in_total_loss/unsup_loss": args.ulb_loss_ratio * loss_train_epoch["unsup_loss"]}, step=epoch)
+    if args.algorithm == "freematch":
+        wandb.log({"loss/freematch_ent_loss": loss_train_epoch["freematch_ent_loss"]}, step=epoch)
+        wandb.log(
+            {"loss_in_total_loss/freematch_ent_loss": args.ent_loss_ratio * loss_train_epoch["freematch_ent_loss"]},
+            step=epoch)
+    if args.python_code_version >= 11:
+        wandb.log({"loss/kl_divergence_loss": loss_train_epoch["kl_divergence_loss"]}, step=epoch)
+        wandb.log({"loss_in_total_loss/kl_divergence_loss": args.lambda_kl_divergence * loss_train_epoch["kl_divergence_loss"]}, step=epoch)
 
 
 def main_log_wandb(args, epoch, y_true, y_pred, eval_dict, loss_train_epoch):

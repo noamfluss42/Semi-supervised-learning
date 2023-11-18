@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --mem=10g
-#SBATCH -c 8
+#SBATCH -c 4
 #SBATCH --time=5-0
 #SBATCH --gres=gpu:1,vmem:10g
 ## 10g selects a better GPU, if we're paying for it. 9153189

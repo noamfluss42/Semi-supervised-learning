@@ -12,7 +12,8 @@ from semilearn.algorithms.utils import SSL_Argument, str2bool
 import sys
 
 sys.path.append("....")
-from my_loss import main_get_extra_loss, log_loss, main_get_entropy_with_labeled_data_loss,main_get_entropy_with_labeled_data_loss_v2
+from my_loss import main_get_extra_loss, log_loss, main_get_entropy_with_labeled_data_loss, \
+    main_get_entropy_with_labeled_data_loss_v2, get_kl_divergence_loss
 
 
 @ALGORITHMS.register('flexmatch')
@@ -61,6 +62,24 @@ class FlexMatch(AlgorithmBase):
                                                      thresh_warmup=self.args.thresh_warmup), "MaskingHook")
 
         super().set_hooks()
+
+    def get_new_lambda_after_collapse_epoch(self):
+        lambda_entropy_to_add = 0
+        lambda_datapoint_entropy_to_add = 0
+        if self.args.lambda_entropy_decay_value != -1 or self.args.lambda_entropy_decay_rate != -1:
+            lambda_entropy_to_add = self.args.lambda_entropy
+            lambda_datapoint_entropy_to_add = self.args.lambda_datapoint_entropy
+            if self.args.lambda_entropy_decay_value != -1:
+                lambda_entropy_to_add -= self.args.lambda_entropy_decay_value
+                lambda_datapoint_entropy_to_add -= self.args.lambda_entropy_decay_value
+            if self.args.lambda_entropy_decay_rate != -1:
+                lambda_entropy_to_add -= (self.epoch - self.args.lambda_entropy_stop_epoch) * \
+                                         self.args.lambda_entropy_decay_rate
+                lambda_datapoint_entropy_to_add -= (self.epoch - self.args.lambda_entropy_stop_epoch) * \
+                                                   self.args.lambda_entropy_decay_rate
+            lambda_entropy_to_add = max(lambda_entropy_to_add, 0)
+            lambda_datapoint_entropy_to_add = max(lambda_datapoint_entropy_to_add, 0)
+        return lambda_entropy_to_add, lambda_datapoint_entropy_to_add
 
     def train_step(self, x_lb, y_lb, idx_ulb, x_ulb_w, x_ulb_s):
         num_lb = y_lb.shape[0]
@@ -125,13 +144,33 @@ class FlexMatch(AlgorithmBase):
 
             if hasattr(self.args, 'lambda_entropy_with_labeled_data_v2'):
                 entropy_with_labeled_data_loss = main_get_entropy_with_labeled_data_loss_v2(self.args, logits_x_ulb_w,
-                                                                                         logits_x_lb)
+                                                                                            logits_x_lb)
                 total_loss += self.args.lambda_entropy_with_labeled_data_v2 * entropy_with_labeled_data_loss
 
             total_loss += self.args.lambda_entropy * entropy_loss + self.args.lambda_datapoint_entropy * datapoint_entropy_loss
 
-            super().update_loss_train_epoch(total_loss, sup_loss, unsup_loss, entropy_loss,
-                                            datapoint_entropy_loss)
+            # if self.args.python_code_version >= 9:
+            #     if self.epoch > self.args.lambda_entropy_stop_epoch and self.args.lambda_entropy_stop_epoch != -1:
+            #         print("remove lambda entropy")
+            #         total_loss -= self.args.lambda_entropy * entropy_loss + self.args.lambda_datapoint_entropy * datapoint_entropy_loss
+            if self.args.python_code_version >= 10:
+                if self.epoch > self.args.lambda_entropy_stop_epoch and self.args.lambda_entropy_stop_epoch != -1:
+                    print("change lambda entropy")
+                    total_loss -= self.args.lambda_entropy * entropy_loss + self.args.lambda_datapoint_entropy * datapoint_entropy_loss
+                    lambda_entropy_to_add, lambda_datapoint_entropy_to_add = self.get_new_lambda_after_collapse_epoch()
+                    total_loss += lambda_entropy_to_add * entropy_loss + lambda_datapoint_entropy_to_add * \
+                                  datapoint_entropy_loss
+            if self.args.python_code_version >= 11:
+                if self.args.lambda_kl_divergence != 0:
+                    kl_divergence_loss = get_kl_divergence_loss(self.args, logits_x_ulb_w)
+                else:
+                    kl_divergence_loss = 0
+                total_loss += self.args.lambda_kl_divergence * kl_divergence_loss
+                super().update_loss_train_epoch(total_loss, sup_loss, unsup_loss, entropy_loss,
+                                                datapoint_entropy_loss, kl_divergence_loss=kl_divergence_loss)
+            else:
+                super().update_loss_train_epoch(total_loss, sup_loss, unsup_loss, entropy_loss,
+                                                datapoint_entropy_loss)
 
         out_dict = self.process_out_dict(loss=total_loss, feat=feat_dict)
         log_dict = self.process_log_dict(sup_loss=sup_loss.item(),

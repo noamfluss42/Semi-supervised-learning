@@ -1,0 +1,9 @@
+Combine score - accuracy of seen + clustering of unseen 17.36
+seen classes accuracy 15.7
+unseen classes recall 18.16
+unseen classes precision 18.16
+balanced_accuracy_multiclass_classification 14.86
+balanced_precision_multiclass_classification 15.36
+F1_score 15.11
+F1_score_seen 13.29
+F1_score_unseen 17.82

@@ -1,0 +1,6 @@
+overall_acc 72.92
+unk_acc 76.2
+closed_acc 74.04
+roc 95.82
+roc_soft 93.4
+rejection_acc 0.76
